@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Air Drawing Using Human Body Detection | Alphagen Learning</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600;700&family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FontAwesome & Confetti CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Poppins', 'sans-serif'],
+            mono: ['Fira Code', 'monospace']
+          },
+          colors: {
+            alphagen: {
+              purple: '#5E48C4',
+              purpleDark: '#4A3AAD',
+              purpleMid: '#7B6ED4',
+              purplePale: '#EAE7FE',
+              purpleGhost: '#F5F4FF',
+              yellow: '#FFD071',
+              yellowDark: '#E6B84A',
+              yellowPale: '#FFF3CC',
+              nearBlack: '#1A1A1A',
+              darkGrey: '#404048',
+              midGrey: '#888896',
+              lightGrey: '#F2F2F4',
+              coral: '#ED5661',
+              coralDark: '#993040',
+              coralPale: '#FFF0F1'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      margin: 0;
+      padding: 16px;
+      background-color: #5E48C4;
+      font-family: 'Poppins', sans-serif;
+      color: #1A1A1A;
+      overflow-x: hidden;
+      user-select: none;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+    }
+
+    .stage-wrapper {
+      width: 100%;
+      max-width: 1280px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .slide-stage {
+      width: 1280px;
+      height: 720px;
+      margin: 0 auto;
+      position: relative;
+      overflow: hidden;
+      background-color: #ffffff;
+      border-radius: 28px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+      border: 1px solid #EAE7FE;
+      transform-origin: top center;
+    }
+
+    .slide-panel {
+      width: 1280px;
+      height: 720px;
+      padding: 68px 46px 22px 46px;
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      background: #ffffff;
+    }
+
+    .slide-panel.active {
+      display: flex;
+      animation: fadeInSmooth 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeInSmooth {
+      from { opacity: 0; transform: scale(0.99) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .btn-interactive {
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .btn-interactive:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 10px 20px -5px rgba(94, 72, 196, 0.25);
+    }
+    .btn-interactive:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    .nav-bar {
+      width: 1280px;
+      margin: 16px auto 12px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 16px;
+      transform-origin: top center;
+    }
+
+    .nav-btn {
+      background: #4A3AAD;
+      color: #FFD071;
+      border: 2px solid #7B6ED4;
+      padding: 10px 26px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: #FFD071;
+      color: #1A1A1A;
+      border-color: #FFD071;
+      transform: scale(1.04);
+    }
+    .nav-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .nav-btn.finish-btn {
+      background: #FFD071;
+      color: #1A1A1A;
+      border-color: #FFD071;
+      animation: pulseFinish 1.6s infinite alternate;
+    }
+
+    @keyframes pulseFinish {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 208, 113, 0.6); }
+      100% { transform: scale(1.05); box-shadow: 0 0 16px 4px rgba(255, 208, 113, 0.4); }
+    }
+
+    .dot-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.4);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .dot-indicator.active {
+      background: #FFD071;
+      width: 24px;
+      border-radius: 10px;
+    }
+
+    .quiz-option {
+      background: #ffffff;
+      border: 2px solid #EAE7FE;
+      border-radius: 18px;
+      padding: 16px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #1A1A1A;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+    }
+    .quiz-option:hover {
+      border-color: #5E48C4;
+      background: #F5F4FF;
+      transform: translateX(3px);
+    }
+    .quiz-option.selected-correct {
+      background: #f0fdf4 !important;
+      border-color: #22c55e !important;
+      color: #14532d !important;
+    }
+    .quiz-option.selected-wrong {
+      background: #FFF0F1 !important;
+      border-color: #ED5661 !important;
+      color: #993040 !important;
+    }
+
+    /* Scratch/PictoBlox Authentic Block Styles */
+    .p-block {
+      display: inline-flex;
+      align-items: center;
+      color: white;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.18);
+      gap: 7px;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .p-block-ai {
+      background: #C93F42;
+      border: 1px solid #9E2427;
+    }
+    .p-block-motion {
+      background: #4C97FF;
+      border: 1px solid #2B6ED4;
+    }
+    .p-block-events {
+      background: #FFBF00;
+      border: 1px solid #D69F00;
+      color: #332200;
+    }
+    .p-block-control {
+      background: #FFAB19;
+      border: 1px solid #CF8400;
+      color: #ffffff;
+    }
+    .p-block-pen {
+      background: #0FBD8C;
+      border: 1px solid #098A65;
+    }
+
+    /* Block input dropdowns */
+    .p-dropdown {
+      background: rgba(0, 0, 0, 0.25);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      outline: none;
+      cursor: pointer;
+    }
+    .p-dropdown option {
+      background: #333333;
+      color: #ffffff;
+    }
+    .p-input-num {
+      background: #ffffff;
+      color: #1A1A1A;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 800;
+      width: 44px;
+      text-align: center;
+      outline: none;
+    }
+
+    .spark-underline {
+      position: relative;
+      display: inline-block;
+      color: #5E48C4;
+    }
+    .spark-underline::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: -6px;
+      width: 100%;
+      height: 10px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 4' preserveAspectRatio='none'%3E%3Cpath d='M0 2 Q 5 0, 10 2 T 20 2' fill='none' stroke='%23FFD071' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-size: 18px 10px;
+    }
+  </style>
+</head>
+
+<body>
+<div class="stage-wrapper">
+
+  <!-- TOP ALPHAGEN BRANDING BAR -->
+  <header class="w-full bg-alphagen-purpleDark px-4 py-3.5 flex flex-wrap items-center justify-between gap-3 text-white shadow-md rounded-2xl mb-4 border border-alphagen-purpleMid">
+    <div class="flex items-center gap-3">
+      <a href="#" class="bg-alphagen-yellow hover:bg-alphagen-yellowDark text-alphagen-nearBlack px-4 py-2 rounded-xl font-extrabold text-xs md:text-sm shadow-sm transition-all flex items-center gap-2">
+        <span class="tracking-wide">ALPHAGEN LEARNING</span>
+      </a>
+      <span class="font-extrabold text-base md:text-xl tracking-tight text-white">
+        Air Drawing Using Human Body Detection
+      </span>
+    </div>
+
+    <!-- Sound Toggle Button in Header -->
+    <div class="flex items-center gap-3">
+      <button onclick="toggleAudio()" id="top-audio-btn" class="bg-alphagen-purple hover:bg-alphagen-purpleMid text-white p-2 rounded-lg transition-all" title="Toggle Sound">
+        <i class="fa-solid fa-volume-high text-base" id="sound-icon"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 1280x720 FIXED PRESENTATION STAGE -->
+  <div class="slide-stage">
+
+    <!-- Header Navigation Bar inside Stage -->
+    <header class="w-full bg-white border-b border-alphagen-purplePale px-6 py-2.5 flex items-center justify-between relative z-50">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-alphagen-purple flex items-center justify-center text-white text-xl shadow-md shadow-alphagen-purple/20">
+          <i class="fa-solid fa-hand-sparkles"></i>
+        </div>
+        <div>
+          <h1 class="font-extrabold text-base text-alphagen-purple tracking-tight">PictoBlox AI — Hand &amp; Body Tracking</h1>
+          <p class="text-xs font-semibold text-alphagen-yellowDark">Interactive Air Drawing Exploration</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2" id="header-dots-container"></div>
+
+      <div class="flex items-center gap-3">
+        <span id="slide-counter-pill" class="text-xs font-bold text-alphagen-purple bg-alphagen-purpleGhost px-3.5 py-1.5 rounded-full border border-alphagen-purplePale">
+          Slide 1 / 11
+        </span>
+
+        <select id="slide-dropdown" onchange="goToSlide(parseInt(this.value))" class="text-xs font-bold text-alphagen-nearBlack bg-alphagen-lightGrey hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-xl cursor-pointer focus:outline-none focus:border-alphagen-purple transition">
+          <option value="1">1. Welcome Screen</option>
+          <option value="2">2. Warm Up: Do You Like to Draw?</option>
+          <option value="3">3. Air Drawing Animation Demo</option>
+          <option value="4">4. Human Body Detection</option>
+          <option value="5">5. What Can Detection Do?</option>
+          <option value="6">6. How It Works</option>
+          <option value="7">7. Learn Key AI Blocks</option>
+          <option value="8">8. Knowledge Check</option>
+          <option value="9">9. Build the Code in PictoBlox</option>
+          <option value="10">10. Pen Extension</option>
+          <option value="11">11. Final Check &amp; Celebrate</option>
+        </select>
+
+        <button onclick="toggleAudio()" id="audio-btn" class="w-9 h-9 rounded-xl bg-alphagen-purpleGhost hover:bg-alphagen-purplePale text-alphagen-purple border border-alphagen-purplePale flex items-center justify-center text-sm transition btn-interactive" title="Toggle Sound">
+          <i class="fa-solid fa-volume-high"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== SLIDE 1: TITLE SCREEN ==================== -->
+    <div id="slide-1" class="slide-panel active justify-between">
+      <div class="grid grid-cols-12 gap-8 my-auto items-center">
+        <!-- Left Content (7 cols) - Clean, no byline, no badge -->
+        <div class="col-span-7 pr-4">
+          <h1 class="text-5xl md:text-6xl font-extrabold text-alphagen-nearBlack leading-tight mb-8">
+            Air Drawing Using Human Body Detection
+          </h1>
+          <button onclick="nextSlide(); playSound('pop')" class="bg-alphagen-yellow hover:bg-alphagen-yellowDark text-alphagen-nearBlack font-extrabold text-xl px-12 py-5 rounded-2xl shadow-xl btn-interactive inline-flex items-center gap-3">
+            <span>Start Exploring</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+
+        <!-- Right Side: Clean Hand Graphic without labels/index step (5 cols) -->
+        <div class="col-span-5 bg-slate-900 border-2 border-slate-800 rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col items-center justify-center">
+          <div class="relative w-64 h-80 flex items-center justify-center bg-slate-950 rounded-2xl border border-slate-800 p-3">
+            <svg viewBox="0 0 200 240" class="w-full h-full">
+              <!-- Hand Contour Outline -->
+              <path d="M 70 230 C 65 190, 45 160, 40 130 C 35 105, 50 95, 60 115 C 65 125, 75 145, 80 155 C 75 110, 75 60, 85 55 C 95 50, 100 80, 102 120 C 103 80, 108 40, 118 40 C 128 40, 128 85, 128 120 C 130 90, 137 60, 146 62 C 153 64, 150 105, 148 135 C 155 115, 163 100, 172 105 C 180 110, 168 150, 160 170 C 150 195, 135 230, 130 230 Z" fill="#2d3748" stroke="#4a5568" stroke-width="2"/>
+              
+              <!-- Skeletal Tracking Wireframe (Yellow) -->
+              <polyline points="100,220 70,165 52,140 45,115" fill="none" stroke="#FFD071" stroke-width="2"/>
+              <polyline points="100,220 85,160 88,115 90,80 92,58" fill="none" stroke="#FFD071" stroke-width="2"/>
+              <polyline points="100,220 108,160 114,115 116,75 118,45" fill="none" stroke="#FFD071" stroke-width="2"/>
+              <polyline points="100,220 128,162 135,120 140,90 144,65" fill="none" stroke="#FFD071" stroke-width="2"/>
+              <polyline points="100,220 148,168 156,140 162,120 168,105" fill="none" stroke="#FFD071" stroke-width="2"/>
+              <polygon points="70,165 85,160 108,160 128,162 148,168 100,220" fill="rgba(255, 208, 113, 0.1)" stroke="#FFD071" stroke-width="1.5"/>
+
+              <!-- Landmark Keypoints -->
+              <circle cx="100" cy="220" r="4.5" fill="#EF4444" stroke="#FFF" stroke-width="1"/>
+              <circle cx="70" cy="165" r="3.5" fill="#EF4444"/>
+              <circle cx="52" cy="140" r="3.5" fill="#EF4444"/>
+              <circle cx="45" cy="115" r="4.5" fill="#EF4444" stroke="#FFD071" stroke-width="1.5"/>
+              <circle cx="85" cy="160" r="3.5" fill="#EF4444"/>
+              <circle cx="88" cy="115" r="3.5" fill="#EF4444"/>
+              <circle cx="90" cy="80" r="3.5" fill="#EF4444"/>
+              <circle cx="92" cy="58" r="5.5" fill="#10B981" stroke="#FFF" stroke-width="2" class="animate-pulse"/>
+              <circle cx="108" cy="160" r="3.5" fill="#EF4444"/>
+              <circle cx="114" cy="115" r="3.5" fill="#EF4444"/>
+              <circle cx="116" cy="75" r="3.5" fill="#EF4444"/>
+              <circle cx="118" cy="45" r="4" fill="#EF4444"/>
+              <circle cx="128" cy="162" r="3.5" fill="#EF4444"/>
+              <circle cx="135" cy="120" r="3.5" fill="#EF4444"/>
+              <circle cx="140" cy="90" r="3.5" fill="#EF4444"/>
+              <circle cx="144" cy="65" r="4" fill="#EF4444"/>
+              <circle cx="148" cy="168" r="3.5" fill="#EF4444"/>
+              <circle cx="156" cy="140" r="3.5" fill="#EF4444"/>
+              <circle cx="162" cy="120" r="3.5" fill="#EF4444"/>
+              <circle cx="168" cy="105" r="4" fill="#EF4444"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 2: WARM-UP QUESTIONS ==================== -->
+    <div id="slide-2" class="slide-panel bg-white justify-between">
+      <div>
+        <span class="text-xs uppercase font-extrabold tracking-wider text-alphagen-purple bg-alphagen-purpleGhost px-4 py-1.5 rounded-md border border-alphagen-purplePale">Ice Breaker</span>
+        <h2 class="text-3xl font-extrabold text-alphagen-purple mt-2">Do You Like to Draw?</h2>
+      </div>
+
+      <div class="grid grid-cols-12 gap-8 my-auto items-stretch">
+        <!-- Question 1: What do you like to draw? (6 cols) -->
+        <div class="col-span-6 bg-alphagen-purpleGhost border-2 border-alphagen-purplePale rounded-3xl p-6 flex flex-col justify-between">
+          <div>
+            <span class="bg-alphagen-purple text-white font-extrabold text-xs px-3.5 py-1 rounded-full uppercase mb-4 inline-block">QUESTION 1</span>
+            <h3 class="font-extrabold text-lg text-alphagen-nearBlack mb-4">What type of images do you love drawing?</h3>
+
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <button onclick="pickDrawType(this, 'Nature & Landscapes 🌲')" class="quiz-option">
+                <span>🌲 Nature &amp; Trees</span>
+              </button>
+              <button onclick="pickDrawType(this, 'Cartoons & Game Characters 👾')" class="quiz-option">
+                <span>👾 Game Characters</span>
+              </button>
+              <button onclick="pickDrawType(this, 'Spaceships & Tech 🚀')" class="quiz-option">
+                <span>🚀 Rockets &amp; Space</span>
+              </button>
+              <button onclick="pickDrawType(this, 'Animals & Pets 🐶')" class="quiz-option">
+                <span>🐶 Cute Animals</span>
+              </button>
+            </div>
+          </div>
+          <div id="draw-type-feedback" class="bg-white border-2 border-alphagen-purplePale p-3 rounded-2xl text-xs font-bold text-alphagen-purple text-center">
+            Click your favorite category above!
+          </div>
+        </div>
+
+        <!-- Question 2: Favorite drawing tools? (6 cols) -->
+        <div class="col-span-6 bg-alphagen-purpleGhost border-2 border-alphagen-purplePale rounded-3xl p-6 flex flex-col justify-between">
+          <div>
+            <span class="bg-alphagen-yellowDark text-alphagen-nearBlack font-extrabold text-xs px-3.5 py-1 rounded-full uppercase mb-4 inline-block">QUESTION 2</span>
+            <h3 class="font-extrabold text-lg text-alphagen-nearBlack mb-4">What is your favorite drawing tool?</h3>
+
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <button onclick="pickDrawTool(this, 'Pencil ✏️')" class="quiz-option">
+                <span>✏️ Pencil</span>
+              </button>
+              <button onclick="pickDrawTool(this, 'Crayons 🖍️')" class="quiz-option">
+                <span>🖍️ Crayons</span>
+              </button>
+              <button onclick="pickDrawTool(this, 'Paint Brush 🖌️')" class="quiz-option">
+                <span>🖌️ Paint Brush</span>
+              </button>
+              <button onclick="pickDrawTool(this, 'Bright Colors 🎨')" class="quiz-option">
+                <span>🎨 Bright Colors</span>
+              </button>
+            </div>
+          </div>
+          <div id="draw-tool-feedback" class="bg-white border-2 border-alphagen-purplePale p-3 rounded-2xl text-xs font-bold text-alphagen-purple text-center">
+            Pick what you usually use on paper!
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-alphagen-yellowPale border border-yellow-300 p-3.5 rounded-2xl text-sm font-bold text-alphagen-nearBlack text-center">
+        💡 Now imagine: What if you did not need paper or a physical pencil at all? What if your <strong>own finger</strong> could draw in thin air?
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 3: AIR DRAWING ANIMATION LAB (NO "HOW DOES IT WORK") ==================== -->
+    <div id="slide-3" class="slide-panel bg-white justify-between">
+      <div>
+        <span class="text-xs uppercase font-extrabold tracking-wider text-alphagen-purple bg-alphagen-purpleGhost px-4 py-1.5 rounded-md border border-alphagen-purplePale">Interactive Demo</span>
+        <h2 class="text-3xl font-extrabold text-alphagen-purple mt-2">Click Anywhere on the Screen to Draw in the Air!</h2>
+      </div>
+
+      <!-- Full Width Air Drawing Canvas -->
+      <div class="w-full bg-slate-900 border-2 border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col justify-between my-auto relative overflow-hidden">
+        <div class="flex justify-between items-center text-xs font-mono text-slate-300 border-b border-slate-800 pb-2 mb-3">
+          <span class="text-alphagen-yellow font-bold uppercase"><i class="fa-solid fa-video mr-1"></i> AIR CANVAS SIMULATOR</span>
+         
+          <button onclick="clearAirCanvas()" class="bg-rose-500/20 text-rose-300 border border-rose-500/40 px-3 py-1 rounded-xl text-xs font-bold hover:bg-rose-500 hover:text-white transition">
+            <i class="fa-solid fa-trash-can mr-1"></i> Clear Canvas
+          </button>
+        </div>
+
+        <div id="air-canvas-container" onclick="handleAirCanvasClick(event)" class="w-full h-[370px] bg-[#0c142b] rounded-2xl border-2 border-slate-700 relative overflow-hidden cursor-crosshair">
+          <!-- Canvas for drawing lines -->
+          <canvas id="airDrawCanvas" width="1180" height="370" class="absolute inset-0 pointer-events-none"></canvas>
+          
+          <!-- Animated Hand Cursor Element -->
+          <div id="animated-hand-cursor" class="absolute top-1/2 left-1/2 -translate-x-4 -translate-y-4 pointer-events-none transition-all duration-700 ease-out flex items-center justify-center">
+            <span class="text-6xl filter drop-shadow">👆</span>
+            <span class="w-4 h-4 rounded-full bg-emerald-400 absolute top-1 left-2 animate-ping"></span>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center mt-3 text-xs font-mono text-slate-400">
+          <span id="coord-readout">Target Position: [x: 590, y: 185]</span>
+          <span class="text-slate-400">Today we will be learning how to use hand detection to create air drawing!</span>
+        </div>
+      </div>
+
+      <div class="bg-alphagen-purpleGhost border-2 border-alphagen-purplePale p-3 rounded-2xl text-center text-xs font-bold text-alphagen-purple">
+        ✨ Today, you will build this exact project in PictoBlox using AI Hand Detection!
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 4: HUMAN BODY DETECTION MODEL ==================== -->
+    <div id="slide-4" class="slide-panel bg-white justify-between">
+      <div>
+        <span class="text-xs uppercase font-extrabold tracking-wider text-alphagen-purple bg-alphagen-purpleGhost px-4 py-1.5 rounded-md border border-alphagen-purplePale">AI Extension</span>
+        <h2 class="text-3xl font-extrabold text-alphagen-purple mt-2">Human Body Detection</h2>
+      </div>
+
+      <div class="grid grid-cols-12 gap-8 my-auto items-stretch">
+        <!-- PictoBlox Extension Card (Screenshot 1 match) -->
+        <div class="col-span-5 bg-slate-900 border-2 border-slate-800 rounded-3xl p-6 text-white shadow-xl flex flex-col justify-between">
+          <div class="bg-white rounded-2xl p-4 text-alphagen-nearBlack border-2 border-slate-700 shadow-md">
+            <div class="flex items-center gap-4">
+              <div class="w-16 h-16 rounded-2xl bg-[#00BFA5] flex items-center justify-center p-2 shadow-sm text-3xl">
+                🖐️
+              </div>
+              <div>
+                <h3 class="text-xl font-extrabold text-slate-800">Human Body Detection</h3>
+                <p class="text-sm font-semibold text-slate-500">Identify human parts from image</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="my-auto py-4 text-center">
+            <div class="text-6xl mb-3">🧍 + ✋</div>
+            <p class="text-sm text-slate-300 font-medium">
+              This PictoBlox AI extension gives your computer the ability to see and track human bodies and hands through your camera!
+            </p>
+          </div>
+
+          
+        </div>
+
+        <!-- 2 Main Modes: Pose Detection & Hand Detection -->
+        <div class="col-span-7 flex flex-col justify-between gap-4">
+          <!-- Pose Detection Card -->
+          <div onclick="selectDetectionMode('pose')" id="mode-card-pose" class="bg-alphagen-purpleGhost border-2 border-alphagen-purplePale p-5 rounded-3xl cursor-pointer btn-interactive">
+            <div class="flex items-center gap-4">
+              <div class="w-16 h-16 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-3xl font-extrabold">
+                🧘
+              </div>
+              <div class="flex-1">
+                <span class="text-xs font-extrabold text-amber-600 uppercase tracking-wide">Mode 1</span>
+                <h3 class="text-xl font-extrabold text-alphagen-nearBlack">Pose Detection</h3>
+                <p class="text-xs text-alphagen-darkGrey mt-1 font-medium">
+                  Detects human body postures! Tracks your head, shoulders, elbows, hips, knees, and ankles.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hand Detection Card -->
+          <div onclick="selectDetectionMode('hand')" id="mode-card-hand" class="bg-alphagen-purpleGhost border-2 border-alphagen-purple p-5 rounded-3xl cursor-pointer btn-interactive shadow-sm">
+            <div class="flex items-center gap-4">
+              <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-3xl font-extrabold">
+                ✋
+              </div>
+              <div class="flex-1">
+                <span class="text-xs font-extrabold text-emerald-600 uppercase tracking-wide">Mode 2 (Our Focus Today!)</span>
+                <h3 class="text-xl font-extrabold text-alphagen-nearBlack">Hand Detection</h3>
+                <p class="text-xs text-alphagen-darkGrey mt-1 font-medium">
+                  Tracks individual joints on fingers and palm.
+                </p>
+              </div>
+            </div>
+          </div>
+
+         
+        </div>
+      </div>
+
+      <div class="bg-white border-2 border-alphagen-purplePale p-3 rounded-xl text-xs font-bold text-alphagen-purple text-center">
+        Click on either mode above to explore what Pose Detection and Hand Detection do!
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 5: WHAT CAN HUMAN BODY DETECTION DO? ==================== -->
+    <div id="slide-5" class="slide-panel bg-white justify-between">
+      <div>
+        <span class="text-xs uppercase font-extrabold tracking-wider text-alphagen-purple bg-alphagen-purpleGhost px-4 py-1.5 rounded-md border border-alphagen-purplePale">AI Superpowers</span>
+        <h2 class="text-3xl font-extrabold text-alphagen-purple mt-2">What Can Human Body Detection Do?</h2>
+      </div>
+
+      <div class="grid grid-cols-3 gap-6 my-auto items-stretch">
+        <!-- Superpower 1 -->
+        <div class="bg-alphagen-purpleGhost border-2 border-alphagen-purplePale rounded-3xl p-6 flex flex-col justify-between text-center">
+          <div>
+            <div class="w-16 h-16 rounded-2xl bg-purple-100 text-alphagen-purple text-3xl flex items-center justify-center mx-auto mb-4 font-bold shadow-sm">
+              🤖
+            </div>
+            <h3 class="font-extrabold text-lg text-alphagen-nearBlack mb-2">No Training Needed!</h3>
+            
+          </div>
+          <div class="mt-4 p-2 bg-white rounded-xl border border-alphagen-purplePale text-xs font-bold text-alphagen-purple">
+            Ready to use right away!
+          </div>
+        </div>
+
+        <!-- Superpower 2 -->
+        <div class="bg-alphagen-purpleGhost border-2 border-alphagen-purplePale rounded-3xl p-6 flex flex-col justify-between text-center">
+          <div>
+            <div class="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 text-3xl flex items-center justify-center mx-auto mb-4 font-bold shadow-sm">
+              📍
+            </div>
+            <h3 class="font-extrabold text-lg text-alphagen-nearBlack mb-2">Real-Time Coordinates</h3>
+           
+          </div>
+          <div class="mt-4 p-2 bg-white rounded-xl border border-alphagen-purplePale text-xs font-bold text-amber-700">
+            Pinpoint X &amp; Y co-ordinate
+          </div>
+        </div>
+
+        <!-- Superpower 3 -->
+        <div class="bg-alphagen-purpleGhost border-2 border-alphagen-purplePale rounded-3xl p-6 flex flex-col justify-between text-center">
+          <div>
+            <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 text-3xl flex items-center justify-center mx-auto mb-4 font-bold shadow-sm">
+              ✌️
+            </div>
+            <h3 class="font-extrabold text-lg text-alphagen-nearBlack mb-2">Recognizes Gestures</h3>
+           
+          </div>
+          <div class="mt-4 p-2 bg-white rounded-xl border border-alphagen-purplePale text-xs font-bold text-emerald-700">
+            Control games with your fingers!
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-alphagen-yellowPale border border-yellow-300 p-3 rounded-2xl text-xs font-bold text-alphagen-nearBlack text-center">
+        💡 Because it can track your index finger's exact X &amp; Y position, we can turn your finger into a digital paintbrush!
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 6: HOW DOES IT WORK? (CLEAN 4 STEPS, NO PIPELINE JARGON) ==================== -->
+    <div id="slide-6" class="slide-panel bg-white justify-between">
+      <div>
+        <span class="text-xs uppercase font-extrabold tracking-wider text-alphagen-purple bg-alphagen-purpleGhost px-4 py-1.5 rounded-md border border-alphagen-purplePale">Step-by-Step</span>
+        <h2 class="text-3xl font-extrabold text-alphagen-purple mt-2">How Does It Work?</h2>
+      </div>
+
+      <div class="grid grid-cols-4 gap-5 my-auto items-stretch">
+        <!-- Step 1 -->
+        <div class="bg-alphagen-purpleGhost border-2 border-alphagen-purplePale rounded-3xl p-5 flex flex-col justify-between text-center">
+          <div>
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-3xl mb-3 font-extrabold shadow-sm">
+              📹
+            </div>
+            <span class="bg-alphagen-purple text-white font-extrabold text-xs px-3 py-1 rounded-full uppercase">Step 1</span>
+            <h3 class="font-extrabold text-base text-alphagen-nearBlack mt-3 mb-2">Turn On Video</h3>
+            
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="bg-alphagen-purpleGhost border-2 border-alphagen-purplePale rounded-3xl p-5 flex flex-col justify-between text-center">
+          <div>
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-3xl mb-3 font-extrabold shadow-sm">
+              🧠
+            </div>
+            <span class="bg-alphagen-yellowDark text-alphagen-nearBlack font-extrabold text-xs px-3 py-1 rounded-full uppercase">Step 2</span>
+            <h3 class="font-extrabold text-base text-alphagen-nearBlack mt-3 mb-2">Analyse Hand</h3>
+           
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="bg-alphagen-purpleGhost border-2 border-alphagen-purplePale rounded-3xl p-5 flex flex-col justify-between text-center">
+          <div>
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-3xl mb-3 font-extrabold shadow-sm">
+              ✅
+            </div>
+            <span class="bg-emerald-600 text-white font-extrabold text-xs px-3 py-1 rounded-full uppercase">Step 3</span>
+            <h3 class="font-extrabold text-base text-alphagen-nearBlack mt-3 mb-2">Check If Detected</h3>
+           
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="bg-alphagen-purpleGhost border-2 border-alphagen-purplePale rounded-3xl p-5 flex flex-col justify-between text-center">
+          <div>
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-cyan-100 text-cyan-700 flex items-center justify-center text-3xl mb-3 font-extrabold shadow-sm">
+              📍
+            </div>
+            <span class="bg-cyan-600 text-white font-extrabold text-xs px-3 py-1 rounded-full uppercase">Step 4</span>
+            <h3 class="font-extrabold text-base text-alphagen-nearBlack mt-3 mb-2">Move Sprite</h3>
+            
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-alphagen-purplePale border border-alphagen-purpleMid p-3 rounded-2xl text-xs font-bold text-alphagen-purple text-center">
+        📹 Turn on camera ➔ 🧠 Analyse image ➔ ✅ Is hand detected? ➔ 📍 Move sprite to finger position!
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 7: LEARN KEY AI BLOCKS (2x2 GRID WITH DIRECT DROPDOWNS) ==================== -->
+    <div id="slide-7" class="slide-panel bg-white justify-between">
+      <div>
+        <span class="text-xs uppercase font-extrabold tracking-wider text-alphagen-purple bg-alphagen-purpleGhost px-4 py-1.5 rounded-md border border-alphagen-purplePale">PictoBlox Blocks</span>
+        <h2 class="text-3xl font-extrabold text-alphagen-purple mt-2">Learn the Key AI Blocks</h2>
+      </div>
+
+      <!-- 2x2 Grid of Blocks with live toggles -->
+      <div class="grid grid-cols-2 gap-6 my-auto items-stretch">
+        <!-- Block 1: Turn Video On -->
+        <div class="bg-alphagen-purpleGhost border-2 border-alphagen-purplePale p-5 rounded-3xl flex flex-col justify-between shadow-sm">
+          <div>
+            <span class="text-[11px] font-extrabold text-alphagen-purple uppercase tracking-wider mb-2 block">1. VIDEO FEED BLOCK</span>
+            <div class="p-block p-block-ai my-3">
+              <span class="text-base">🖐️</span>
+              <span>turn</span>
+              <select id="b1-state" onchange="updateBlockExpl()" class="p-dropdown">
+                <option value="on">on</option>
+                <option value="off">off</option>
+                <option value="on-flipped">on-flipped</option>
+              </select>
+              <span>video on stage with</span>
+              <input type="number" id="b1-trans" value="0" min="0" max="100" class="p-input-num" onchange="updateBlockExpl()">
+              <span>% transparency</span>
+            </div>
+          </div>
+          <p id="b1-desc" class="text-xs font-semibold text-alphagen-darkGrey bg-white p-3 rounded-xl border border-alphagen-purplePale">
+            <strong>What it does:</strong> Turns on camera with 0% transparency so you can see yourself clearly on stage.
+          </p>
+        </div>
+
+        <!-- Block 2: Analyse Image -->
+        <div class="bg-alphagen-purpleGhost border-2 border-alphagen-purplePale p-5 rounded-3xl flex flex-col justify-between shadow-sm">
+          <div>
+            <span class="text-[11px] font-extrabold text-alphagen-purple uppercase tracking-wider mb-2 block">2. IMAGE ANALYSIS BLOCK</span>
+            <div class="p-block p-block-ai my-3">
+              <span class="text-base">🖐️</span>
+              <span>analyse image for hand from</span>
+              <select id="b2-source" onchange="updateBlockExpl()" class="p-dropdown">
+                <option value="camera">camera</option>
+                <option value="stage">stage</option>
+              </select>
+            </div>
+          </div>
+          <p id="b2-desc" class="text-xs font-semibold text-alphagen-darkGrey bg-white p-3 rounded-xl border border-alphagen-purplePale">
+            <strong>What it does:</strong> Tells the AI to inspect each picture from the camera to locate the hand joints.
+          </p>
+        </div>
+
+        <!-- Block 3: Is Hand Detected -->
+        <div class="bg-alphagen-purpleGhost border-2 border-alphagen-purplePale p-5 rounded-3xl flex flex-col justify-between shadow-sm">
+          <div>
+            <span class="text-[11px] font-extrabold text-alphagen-purple uppercase tracking-wider mb-2 block">3. DETECTION CONDITION (BOOLEAN)</span>
+            <div class="my-3">
+              <div class="p-block p-block-ai" style="border-radius: 24px; padding: 8px 18px;">
+                <span class="text-base">🖐️</span>
+                <span>is hand detected</span>
+              </div>
+            </div>
+          </div>
+          <p class="text-xs font-semibold text-alphagen-darkGrey bg-white p-3 rounded-xl border border-alphagen-purplePale">
+            <strong>What it does:</strong> A diamond-shaped true/false reporter! Tells code whether a hand is visible right now.
+          </p>
+        </div>
+
+        <!-- Block 4: Coordinate Position with multi-dropdowns -->
+        <div class="bg-alphagen-purpleGhost border-2 border-alphagen-purplePale p-5 rounded-3xl flex flex-col justify-between shadow-sm">
+          <div>
+            <span class="text-[11px] font-extrabold text-alphagen-purple uppercase tracking-wider mb-2 block">4. FINGER COORDINATE BLOCK</span>
+            <div class="p-block p-block-ai my-3 flex-wrap">
+              <span class="text-base">🖐️</span>
+              <select id="b4-axis" onchange="updateBlockExpl()" class="p-dropdown">
+                <option value="x">x</option>
+                <option value="y">y</option>
+              </select>
+              <span>position of</span>
+              <select id="b4-part" onchange="updateBlockExpl()" class="p-dropdown">
+                <option value="top">top</option>
+                <option value="middle 1">middle 1</option>
+                <option value="middle 2">middle 2</option>
+                <option value="bottom">bottom</option>
+              </select>
+              <span>of</span>
+              <select id="b4-finger" onchange="updateBlockExpl()" class="p-dropdown">
+                <option value="index finger">index finger</option>
+                <option value="middle finger">middle finger</option>
+                <option value="ring finger">ring finger</option>
+                <option value="pinky finger">pinky finger</option>
+                <option value="thumb">thumb</option>
+              </select>
+            </div>
+          </div>
+          <p id="b4-desc" class="text-xs font-semibold text-alphagen-darkGrey bg-white p-3 rounded-xl border border-alphagen-purplePale">
+            <strong>Currently reporting:</strong> The horizontal <span class="text-purple-700 font-bold">X position</span> of the <span class="text-purple-700 font-bold">top</span> joint on your <span class="text-purple-700 font-bold">index finger</span>!
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-white border-2 border-alphagen-purplePale p-3 rounded-xl text-xs font-bold text-alphagen-purple text-center">
+        💡 Try changing the dropdowns above! You can pick different joints, fingers, and X/Y coordinates!
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 8: KNOWLEDGE CHECK ==================== -->
+    <div id="slide-8" class="slide-panel bg-white justify-between">
+      <div>
+        <span class="text-xs uppercase font-extrabold tracking-wider text-alphagen-purple bg-alphagen-purpleGhost px-4 py-1.5 rounded-md border border-alphagen-purplePale">Concept Check</span>
+        <h2 class="text-3xl font-extrabold text-alphagen-purple mt-2">Quick Knowledge Check</h2>
+      </div>
+
+      <div class="grid grid-cols-12 gap-8 my-auto items-stretch">
+        <!-- Question 1: Visual PictoBlox Blocks Only -->
+        <div class="col-span-6 bg-alphagen-purpleGhost border-2 border-alphagen-purplePale p-6 rounded-3xl flex flex-col justify-between">
+          <div>
+            <span class="bg-alphagen-purple text-white font-extrabold text-xs px-3.5 py-1 rounded-full uppercase mb-4 inline-block">QUESTION 1</span>
+            <h3 class="font-extrabold text-base text-alphagen-nearBlack mb-4">
+              Which block is used to check if a hand is currently detected?
+            </h3>
+
+            <div class="space-y-4">
+              <!-- Option A: Visual Block for show detections -->
+              <button onclick="checkQuizQ1(this, false)" class="quiz-option w-full py-4 justify-center">
+                <div class="p-block p-block-ai">
+                  <span class="text-sm">🖐️</span>
+                  <span>show detections</span>
+                </div>
+              </button>
+
+              <!-- Option B: Visual Block for is hand detected (Diamond) -->
+              <button onclick="checkQuizQ1(this, true)" class="quiz-option w-full py-4 justify-center">
+                <div class="p-block p-block-ai" style="border-radius: 20px; padding: 8px 20px;">
+                  <span class="text-sm">🖐️</span>
+                  <span>is hand detected</span>
+                </div>
+              </button>
+            </div>
+          </div>
+          <div id="q1-feedback" class="hidden p-3 rounded-xl text-xs font-bold text-center mt-3"></div>
+        </div>
+
+        <!-- Question 2: Model Choice -->
+        <div class="col-span-6 bg-alphagen-purpleGhost border-2 border-alphagen-purplePale p-6 rounded-3xl flex flex-col justify-between">
+          <div>
+            <span class="bg-alphagen-purple text-white font-extrabold text-xs px-3.5 py-1 rounded-full uppercase mb-4 inline-block">QUESTION 2</span>
+            <h3 class="font-extrabold text-base text-alphagen-nearBlack mb-4">
+              For this air drawing project, which model will we be using?
+            </h3>
+
+            <div class="space-y-4">
+              <button onclick="checkQuizQ2(this, false)" class="quiz-option w-full">
+                <span class="flex items-center gap-2">
+                  <span class="text-2xl">🧘</span>
+                  <span>Pose Detection</span>
+                </span>
+              </button>
+              <button onclick="checkQuizQ2(this, true)" class="quiz-option w-full">
+                <span class="flex items-center gap-2">
+                  <span class="text-2xl">✋</span>
+                  <span>Hand Detection</span>
+                </span>
+              </button>
+            </div>
+          </div>
+          <div id="q2-feedback" class="hidden p-3 rounded-xl text-xs font-bold text-center mt-3"></div>
+        </div>
+      </div>
+
+      <div class="bg-white border-2 border-alphagen-purplePale p-3 rounded-xl text-xs font-bold text-alphagen-purple text-center">
+        Select the correct answers above to unlock the code building studio!
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 9: BUILD CODE IN PICTOBLOX (PROPER C-MOUTH FOREVER WRAPPER) ==================== -->
+    <div id="slide-9" class="slide-panel bg-white justify-between">
+      <div>
+        <span class="text-xs uppercase font-extrabold tracking-wider text-alphagen-purple bg-alphagen-purpleGhost px-4 py-1.5 rounded-md border border-alphagen-purplePale">Code Assembly</span>
+        <h2 class="text-3xl font-extrabold text-alphagen-purple mt-2">Build the Code to Move the Sprite with Your Fingers</h2>
+      </div>
+
+      <div class="grid grid-cols-12 gap-6 my-auto items-stretch">
+        <!-- Palette on Left (5 cols) -->
+        <div class="col-span-5 bg-alphagen-purpleGhost border-2 border-alphagen-purplePale rounded-3xl p-5 flex flex-col justify-between">
+          <div>
+            <span class="text-xs font-extrabold text-alphagen-purple uppercase tracking-wider mb-2 block">1. CLICK BLOCKS IN SEQUENCE:</span>
+
+            <div class="space-y-2.5" id="code-palette">
+              <button onclick="addCodeStep(1)" id="cpuz-1" class="w-full text-left p-block p-block-ai btn-interactive">
+                🖐️ turn on video on stage with 0% transparency
+              </button>
+              <button onclick="addCodeStep(2)" id="cpuz-2" class="w-full text-left p-block p-block-control btn-interactive opacity-40 pointer-events-none">
+                🔁 forever
+              </button>
+              <button onclick="addCodeStep(3)" id="cpuz-3" class="w-full text-left p-block p-block-ai btn-interactive opacity-40 pointer-events-none">
+                🖐️ analyse image for hand from camera
+              </button>
+              <button onclick="addCodeStep(4)" id="cpuz-4" class="w-full text-left p-block p-block-control btn-interactive opacity-40 pointer-events-none">
+                🔲 if &lt;is hand detected&gt; then
+              </button>
+              <button onclick="addCodeStep(5)" id="cpuz-5" class="w-full text-left p-block p-block-motion btn-interactive opacity-40 pointer-events-none">
+                📍 go to x: (x of index) y: (y of index)
+              </button>
+            </div>
+          </div>
+
+          <button onclick="resetCodeBuilder()" class="mt-2 text-xs text-alphagen-purple font-bold hover:underline text-center">
+            ↺ Reset Code Assembly
+          </button>
+        </div>
+
+        <!-- Authentic Nested C-Mouth Scratch Workspace matching Screenshot 2 (7 cols) -->
+        <div class="col-span-7 bg-[#2A1C68] border-2 border-alphagen-purpleMid rounded-3xl p-5 text-white flex flex-col justify-between shadow-xl">
+          <div>
+            <div class="text-xs font-mono text-alphagen-yellow font-bold uppercase mb-2 flex justify-between">
+              <span>PICTOBLOX WORKSPACE</span>
+              <span id="script-progress-tag" class="text-emerald-400">Step 1 of 5</span>
+            </div>
+
+            <!-- Authentic Scratch Code Block Stack -->
+            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1 font-sans text-xs">
+              <!-- Green Flag Hat -->
+              <div class="p-block p-block-events" style="border-radius: 14px 14px 4px 4px;">
+                <span>when 🟢 clicked</span>
+              </div>
+
+              <!-- Step 1: Turn Video On -->
+              <div id="ws-step-1" class="hidden">
+                <div class="p-block p-block-ai">
+                  <span>🖐️ turn on video on stage with 0% transparency</span>
+                </div>
+              </div>
+
+              <!-- Step 2: Forever Loop with Authentic C-Mouth wrapping subsequent blocks -->
+              <div id="ws-step-2" class="hidden">
+                <!-- Top bar of Forever -->
+                <div class="p-block p-block-control" style="border-radius: 6px 6px 0 0; width: 100%;">
+                  <span>forever</span>
+                </div>
+
+                <!-- C-Mouth Inner Body with Left Orange Spine -->
+                <div class="border-l-[14px] border-[#FFAB19] pl-3 py-2 space-y-1.5 bg-[#FFAB19]/10 rounded-r-lg">
+                  <!-- Step 3: Inside Forever -->
+                  <div id="ws-step-3" class="hidden">
+                    <div class="p-block p-block-ai">
+                      <span>🖐️ analyse image for hand from camera</span>
+                    </div>
+                  </div>
+
+                  <!-- Step 4: If Condition Inside Forever -->
+                  <div id="ws-step-4" class="hidden">
+                    <!-- Top bar of If -->
+                    <div class="p-block p-block-control" style="border-radius: 6px 6px 0 0; width: 100%;">
+                      <span>if</span>
+                      <span class="p-block p-block-ai" style="border-radius: 14px; padding: 2px 8px; font-size: 11px;">🖐️ is hand detected</span>
+                      <span>then</span>
+                    </div>
+
+                    <!-- Inner Body of If with Left Orange Spine -->
+                    <div class="border-l-[12px] border-[#FFAB19] pl-3 py-2 bg-[#FFAB19]/15 rounded-r-lg">
+                      <!-- Step 5: Go to X & Y Nested inside IF -->
+                      <div id="ws-step-5" class="hidden">
+                        <div class="p-block p-block-motion text-[11px] py-1.5 flex-wrap">
+                          <span>go to x:</span>
+                          <span class="p-block p-block-ai" style="border-radius: 10px; padding: 1px 6px; font-size: 10px;">🖐️ x of top of index</span>
+                          <span>y:</span>
+                          <span class="p-block p-block-ai" style="border-radius: 10px; padding: 1px 6px; font-size: 10px;">🖐️ y of top of index</span>
+                        </div>
+                      </div>
+                      <div id="ws-ph-5" class="text-[11px] text-amber-300/70 italic py-1">[Step 5 will go inside this IF block]</div>
+                    </div>
+
+                    <!-- Bottom bracket of If -->
+                    <div class="h-2 w-16 bg-[#FFAB19] rounded-b-md"></div>
+                  </div>
+                  <div id="ws-ph-4" class="text-[11px] text-amber-300/70 italic py-1">[Steps 3, 4, 5 go inside FOREVER]</div>
+                </div>
+
+                <!-- Bottom bracket of Forever with loop arrow -->
+                <div class="h-4 bg-[#FFAB19] rounded-b-lg flex items-center px-2 text-[10px] text-white">
+                  <span>↺</span>
+                </div>
+              </div>
+
+              <!-- Placeholder for Step 1 -->
+              <div id="ws-ph-1" class="text-xs text-slate-500 italic p-3 border-2 border-dashed border-slate-700 rounded-xl text-center">
+                Click block 1 on the left to start building!
+              </div>
+            </div>
+          </div>
+
+          <div id="code-success-msg" class="hidden p-3 bg-emerald-500/20 border border-emerald-400 text-emerald-300 rounded-xl text-xs font-bold text-center">
+            🎉 Simulation complete! Let's complete this code in PictoBlox!
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 10: LET'S WORK ON AIR DRAWING: PEN EXTENSION ==================== -->
+    <div id="slide-10" class="slide-panel bg-white justify-between">
+      <div>
+        <span class="text-xs uppercase font-extrabold tracking-wider text-alphagen-purple bg-alphagen-purpleGhost px-4 py-1.5 rounded-md border border-alphagen-purplePale">Drawing Extension</span>
+        <h2 class="text-3xl font-extrabold text-alphagen-purple mt-2">Let's Work on Air Drawing</h2>
+      </div>
+
+      <div class="grid grid-cols-12 gap-8 my-auto items-stretch">
+        <!-- Interactive Pen Q&A (6 cols) -->
+        <div class="col-span-6 bg-alphagen-purpleGhost border-2 border-alphagen-purplePale rounded-3xl p-6 flex flex-col justify-between">
+          <div>
+            <span class="bg-alphagen-purple text-white font-extrabold text-xs px-3.5 py-1 rounded-full uppercase mb-4 inline-block">DRAWING TOOLS</span>
+            <h3 class="font-extrabold text-base text-alphagen-nearBlack mb-4">
+              To draw anything in PictoBlox, what sprite and extension do we need?
+            </h3>
+
+            <div class="space-y-3 mb-4">
+              <button onclick="selectPenTool(this, 'pencil')" class="quiz-option w-full">
+                <span>✏️ A Pencil / Pen Sprite</span>
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+              </button>
+              <button onclick="selectPenTool(this, 'pen_ext')" class="quiz-option w-full">
+                <span>🟢 The Pen Extension Blocks</span>
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+              </button>
+            </div>
+          </div>
+
+          <div id="pen-feedback" class="bg-white border-2 border-alphagen-purplePale p-3 rounded-2xl text-xs font-bold text-alphagen-purple text-center">
+            We need both: a Pencil sprite that moves with our finger, and the Pen extension to draw ink!
+          </div>
+        </div>
+
+        <!-- Pen Blocks (6 cols) -->
+        <div class="col-span-6 bg-slate-900 border-2 border-slate-800 rounded-3xl p-6 text-white shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="text-xs font-mono text-alphagen-yellow font-bold uppercase mb-3">
+              Essential Pen Extension Blocks:
+            </div>
+
+            <div class="space-y-3">
+              <!-- pen down -->
+              <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div class="p-block p-block-pen">
+                  <span>🖋️ pen down</span>
+                </div>
+                <span class="text-xs text-slate-300 font-semibold">Lowers pen to draw lines on stage</span>
+              </div>
+
+              <!-- pen up -->
+              <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div class="p-block p-block-pen">
+                  <span>✋ pen up</span>
+                </div>
+                <span class="text-xs text-slate-300 font-semibold">Lifts pen up when no hand is seen</span>
+              </div>
+
+              <!-- erase all -->
+              <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div class="p-block p-block-pen">
+                  <span>🧹 erase all</span>
+                </div>
+                <span class="text-xs text-slate-300 font-semibold">Clears previous drawings from screen</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs font-mono text-emerald-400 text-center">
+            Combine Pen Down + Index Finger Position = Air Drawing!
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-alphagen-yellowPale border border-yellow-300 p-3 rounded-xl text-xs font-bold text-alphagen-nearBlack text-center">
+        💡 When the sprite glides to your fingertip with <strong>pen down</strong>, it paints wherever your hand moves!
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 11: FINAL KNOWLEDGE CHECK & CELEBRATION (NO CHECKLIST) ==================== -->
+    <div id="slide-11" class="slide-panel bg-white justify-between">
+      <div>
+        <span class="text-xs uppercase font-extrabold tracking-wider text-alphagen-purple bg-alphagen-purpleGhost px-4 py-1.5 rounded-md border border-alphagen-purplePale">Mastery Check</span>
+        <h2 class="text-3xl font-extrabold text-alphagen-purple mt-2">Final Knowledge Check &amp; Celebration</h2>
+      </div>
+
+      <!-- Focused Question Card -->
+      <div class="my-auto max-w-2xl mx-auto w-full bg-alphagen-purpleGhost border-2 border-alphagen-purplePale p-8 rounded-3xl shadow-sm text-center">
+        <span class="bg-alphagen-purple text-white font-extrabold text-xs px-4 py-1 rounded-full uppercase mb-4 inline-block">FINAL QUESTION</span>
+        
+        <h3 class="font-extrabold text-xl text-alphagen-nearBlack mb-6">
+          If I want my sprite to continuously follow my moving finger without stopping, which block do I need to use?
+        </h3>
+
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <button onclick="checkFinalQuiz(this, true)" class="quiz-option justify-center py-4 text-center">
+            <span class="text-base font-bold">🔁 Forever Block</span>
+          </button>
+          <button onclick="checkFinalQuiz(this, false)" class="quiz-option justify-center py-4 text-center">
+            <span class="text-base font-bold">🔟 Repeat (10) Block</span>
+          </button>
+        </div>
+
+        <div id="final-feedback" class="hidden p-3.5 rounded-2xl text-sm font-bold text-center"></div>
+      </div>
+
+      <!-- Celebrate Confetti Button -->
+      <div>
+        <button onclick="triggerGrandCelebration()" class="w-full bg-alphagen-yellow hover:bg-alphagen-yellowDark text-alphagen-nearBlack font-extrabold py-5 rounded-2xl text-lg btn-interactive shadow-lg flex items-center justify-center gap-3">
+          <i class="fa-solid fa-trophy text-alphagen-purple text-xl"></i>
+          <span>Celebrate Mission Completion!</span>
+          <span>🎉</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Navigation Control Bar -->
+  <div class="nav-bar">
+    <button id="prev-btn" class="nav-btn btn-interactive" onclick="prevSlide()" disabled>
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Previous</span>
+    </button>
+
+    <span class="text-xs font-semibold text-white/90">
+      Use Arrow Keys (← / →) or buttons to navigate slides
+    </span>
+
+    <button id="next-btn" class="nav-btn btn-interactive" onclick="handleNextOrFinish()">
+      <span id="next-btn-text">Next</span>
+      <i id="next-btn-icon" class="fa-solid fa-arrow-right"></i>
+    </button>
+  </div>
+</div>
+
+<script>
+let currentSlide = 1;
+const totalSlides = 11;
+let soundEnabled = true;
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+/* Web Audio Synthesizer */
+function playSound(type) {
+  if (!soundEnabled) return;
+  try {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+
+    if (type === 'correct') {
+      o.type = 'sine';
+      o.frequency.setValueAtTime(523, now);
+      o.frequency.exponentialRampToValueAtTime(659, now + 0.15);
+      g.gain.setValueAtTime(0.1, now);
+      g.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      o.start();
+      o.stop(now + 0.3);
+    } else if (type === 'wrong') {
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(180, now);
+      o.frequency.linearRampToValueAtTime(110, now + 0.2);
+      g.gain.setValueAtTime(0.1, now);
+      g.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+      o.start();
+      o.stop(now + 0.25);
+    } else {
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(360, now);
+      o.frequency.exponentialRampToValueAtTime(720, now + 0.08);
+      g.gain.setValueAtTime(0.1, now);
+      g.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+      o.start();
+      o.stop(now + 0.08);
+    }
+  } catch (e) {}
+}
+
+function toggleAudio() {
+  soundEnabled = !soundEnabled;
+  const iconHtml = soundEnabled ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark"></i>';
+  const topAudioBtn = document.getElementById('top-audio-btn');
+  const stageAudioBtn = document.getElementById('audio-btn');
+  if (topAudioBtn) topAudioBtn.innerHTML = soundEnabled ? '<i class="fa-solid fa-volume-high text-base"></i>' : '<i class="fa-solid fa-volume-xmark text-base"></i>';
+  if (stageAudioBtn) stageAudioBtn.innerHTML = iconHtml;
+}
+
+/* Confetti Celebrations */
+function triggerSuccessConfetti() {
+  playSound('correct');
+  if (typeof confetti === 'function') {
+    confetti({ particleCount: 75, spread: 60, origin: { y: 0.6 } });
+  }
+}
+
+function triggerGrandCelebration() {
+  playSound('correct');
+  if (typeof confetti === 'function') {
+    confetti({
+      particleCount: 140,
+      spread: 90,
+      origin: { y: 0.5 },
+      colors: ['#5E48C4', '#FFD071', '#4C97FF', '#ED5661', '#0FBD8C']
+    });
+    setTimeout(() => {
+      confetti({ particleCount: 90, angle: 60, spread: 55, origin: { x: 0 } });
+      confetti({ particleCount: 90, angle: 120, spread: 55, origin: { x: 1 } });
+    }, 250);
+  }
+}
+
+/* Navigation System */
+function initHeaderDots() {
+  const c = document.getElementById('header-dots-container');
+  if (!c) return;
+  c.innerHTML = '';
+  for (let i = 1; i <= totalSlides; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot-indicator ' + (i === 1 ? 'active' : '');
+    d.onclick = () => goToSlide(i);
+    c.appendChild(d);
+  }
+}
+
+function updateSlideDisplay() {
+  document.querySelectorAll('.slide-panel').forEach((p, i) => p.classList.toggle('active', i + 1 === currentSlide));
+  document.querySelectorAll('.dot-indicator').forEach((d, i) => d.classList.toggle('active', i + 1 === currentSlide));
+
+  const counterPill = document.getElementById('slide-counter-pill');
+  const dropdown = document.getElementById('slide-dropdown');
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  const nextBtnText = document.getElementById('next-btn-text');
+  const nextBtnIcon = document.getElementById('next-btn-icon');
+
+  if (counterPill) counterPill.innerText = `Slide ${currentSlide} / ${totalSlides}`;
+  if (dropdown) dropdown.value = currentSlide;
+  if (prevBtn) prevBtn.disabled = currentSlide === 1;
+
+  if (nextBtn && nextBtnText && nextBtnIcon) {
+    if (currentSlide === totalSlides) {
+      nextBtnText.innerText = 'Finish';
+      nextBtnIcon.className = 'fa-solid fa-flag-checkered';
+      nextBtn.classList.add('finish-btn');
+    } else {
+      nextBtnText.innerText = 'Next';
+      nextBtnIcon.className = 'fa-solid fa-arrow-right';
+      nextBtn.classList.remove('finish-btn');
+    }
+  }
+
+  if (currentSlide === 3) {
+    setTimeout(initAirCanvas, 80);
+  }
+}
+
+function handleNextOrFinish() {
+  if (currentSlide === totalSlides) {
+    triggerGrandCelebration();
+  } else {
+    nextSlide();
+  }
+}
+
+function nextSlide() {
+  if (currentSlide < totalSlides) {
+    currentSlide++;
+    updateSlideDisplay();
+    playSound('pop');
+  }
+}
+
+function prevSlide() {
+  if (currentSlide > 1) {
+    currentSlide--;
+    updateSlideDisplay();
+    playSound('pop');
+  }
+}
+
+function goToSlide(n) {
+  if (n >= 1 && n <= totalSlides) {
+    currentSlide = n;
+    updateSlideDisplay();
+    playSound('pop');
+  }
+}
+
+function fitStageToScreen() {
+  const stage = document.querySelector('.slide-stage');
+  const nav = document.querySelector('.nav-bar');
+  if (!stage) return;
+  const availableWidth = window.innerWidth - 32;
+  if (availableWidth < 1280) {
+    const scale = availableWidth / 1280;
+    stage.style.transform = `scale(${scale})`;
+    stage.style.marginBottom = `-${720 * (1 - scale)}px`;
+    if (nav) nav.style.transform = `scale(${scale})`;
+  } else {
+    stage.style.transform = 'none';
+    stage.style.marginBottom = '0px';
+    if (nav) nav.style.transform = 'none';
+  }
+}
+
+/* SLIDE 2: DRAWING WARM-UP */
+function pickDrawType(btn, text) {
+  playSound('pop');
+  btn.parentElement.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('selected-correct'));
+  btn.classList.add('selected-correct');
+  document.getElementById('draw-type-feedback').innerText = `Awesome! Drawing ${text} is super fun!`;
+}
+
+function pickDrawTool(btn, text) {
+  playSound('correct');
+  btn.parentElement.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('selected-correct'));
+  btn.classList.add('selected-correct');
+  document.getElementById('draw-tool-feedback').innerText = `Great choice! Using ${text} creates vivid artwork!`;
+}
+
+/* SLIDE 3: AIR CANVAS CLICK & DRAWING ANIMATION */
+let lastDrawX = null;
+let lastDrawY = null;
+
+function initAirCanvas() {
+  const canvas = document.getElementById('airDrawCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#59E4FB';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+}
+
+function handleAirCanvasClick(e) {
+  playSound('pop');
+  const container = document.getElementById('air-canvas-container');
+  const hand = document.getElementById('animated-hand-cursor');
+  const canvas = document.getElementById('airDrawCanvas');
+  if (!container || !hand || !canvas) return;
+
+  const rect = container.getBoundingClientRect();
+  const targetX = Math.round(e.clientX - rect.left);
+  const targetY = Math.round(e.clientY - rect.top);
+
+  hand.style.left = `${targetX}px`;
+  hand.style.top = `${targetY}px`;
+
+  document.getElementById('coord-readout').innerText = `Target Position: [x: ${targetX}, y: ${targetY}] (Finger Gliding!)`;
+  document.getElementById('canvas-status').innerText = `✨ Hand moved to [${targetX}, ${targetY}]! Line drawn!`;
+
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#59E4FB';
+  ctx.shadowColor = '#FFD071';
+  ctx.shadowBlur = 8;
+  ctx.lineWidth = 5;
+
+  if (lastDrawX === null || lastDrawY === null) {
+    lastDrawX = canvas.width / 2;
+    lastDrawY = canvas.height / 2;
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(lastDrawX, lastDrawY);
+  ctx.lineTo(targetX, targetY);
+  ctx.stroke();
+
+  ctx.fillStyle = '#FFD071';
+  ctx.beginPath();
+  ctx.arc(targetX, targetY, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  lastDrawX = targetX;
+  lastDrawY = targetY;
+  playSound('correct');
+}
+
+function clearAirCanvas() {
+  playSound('pop');
+  const canvas = document.getElementById('airDrawCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  lastDrawX = canvas.width / 2;
+  lastDrawY = canvas.height / 2;
+  const hand = document.getElementById('animated-hand-cursor');
+  if (hand) {
+    hand.style.left = '50%';
+    hand.style.top = '50%';
+  }
+  document.getElementById('canvas-status').innerText = 'Canvas cleared! Click anywhere to begin drawing again.';
+}
+
+/* SLIDE 4: DETECTION MODE TOGGLE */
+function selectDetectionMode(mode) {
+  playSound('pop');
+  const cardPose = document.getElementById('mode-card-pose');
+  const cardHand = document.getElementById('mode-card-hand');
+  const fb = document.getElementById('detection-mode-feedback');
+
+  if (mode === 'pose') {
+    cardPose.className = 'bg-alphagen-purpleGhost border-2 border-alphagen-purple p-5 rounded-3xl cursor-pointer btn-interactive shadow-sm';
+    cardHand.className = 'bg-alphagen-purpleGhost border-2 border-alphagen-purplePale p-5 rounded-3xl cursor-pointer btn-interactive';
+    fb.innerHTML = '🧘 <strong>Pose Detection:</strong> Detects body posture, hips, knees &amp; shoulders for fitness &amp; dance!';
+  } else {
+    cardHand.className = 'bg-alphagen-purpleGhost border-2 border-alphagen-purple p-5 rounded-3xl cursor-pointer btn-interactive shadow-sm';
+    cardPose.className = 'bg-alphagen-purpleGhost border-2 border-alphagen-purplePale p-5 rounded-3xl cursor-pointer btn-interactive';
+    fb.innerHTML = '✋ <strong>Hand Detection:</strong> Detects 21 joints on hands &amp; fingers. Perfect for Air Drawing!';
+  }
+}
+
+/* SLIDE 7: LIVE DROPDOWN BLOCK EXPLORER */
+function updateBlockExpl() {
+  playSound('pop');
+  const b1State = document.getElementById('b1-state').value;
+  const b1Trans = document.getElementById('b1-trans').value;
+  const b2Source = document.getElementById('b2-source').value;
+  const b4Axis = document.getElementById('b4-axis').value;
+  const b4Part = document.getElementById('b4-part').value;
+  const b4Finger = document.getElementById('b4-finger').value;
+
+  document.getElementById('b1-desc').innerHTML = `<strong>What it does:</strong> Video is turned <strong>${b1State}</strong> with <strong>${b1Trans}%</strong> transparency.`;
+  document.getElementById('b2-desc').innerHTML = `<strong>What it does:</strong> AI will analyse image from the <strong>${b2Source}</strong> frame.`;
+  
+  const axisLabel = b4Axis === 'x' ? 'horizontal X position' : 'vertical Y position';
+  document.getElementById('b4-desc').innerHTML = `<strong>Currently reporting:</strong> The ${axisLabel} of the <span class="text-purple-700 font-bold">${b4Part}</span> joint on your <span class="text-purple-700 font-bold">${b4Finger}</span>!`;
+}
+
+/* SLIDE 8: KNOWLEDGE CHECK */
+function checkQuizQ1(btn, isCorrect) {
+  const fb = document.getElementById('q1-feedback');
+  btn.parentElement.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('selected-correct', 'selected-wrong'));
+
+  if (isCorrect) {
+    btn.classList.add('selected-correct');
+    fb.innerText = '✅ Correct! <is hand detected> is the boolean diamond block that checks detection!';
+    fb.className = 'p-3 rounded-xl text-xs font-bold text-center mt-3 block bg-emerald-100 text-emerald-800';
+    triggerSuccessConfetti();
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.innerText = '❌ Try again! We need the diamond-shaped reporter block <is hand detected>!';
+    fb.className = 'p-3 rounded-xl text-xs font-bold text-center mt-3 block bg-rose-100 text-rose-800';
+    playSound('wrong');
+  }
+}
+
+function checkQuizQ2(btn, isCorrect) {
+  const fb = document.getElementById('q2-feedback');
+  btn.parentElement.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('selected-correct', 'selected-wrong'));
+
+  if (isCorrect) {
+    btn.classList.add('selected-correct');
+    fb.innerText = '✅ Spot on! Hand Detection tracks fingertips to draw!';
+    fb.className = 'p-3 rounded-xl text-xs font-bold text-center mt-3 block bg-emerald-100 text-emerald-800';
+    triggerSuccessConfetti();
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.innerText = '❌ Pose detection tracks full body posture, whereas Hand Detection tracks our fingers!';
+    fb.className = 'p-3 rounded-xl text-xs font-bold text-center mt-3 block bg-rose-100 text-rose-800';
+    playSound('wrong');
+  }
+}
+
+/* SLIDE 9: CODE BUILDING PUZZLE WITH AUTHENTIC NESTED C-SHAPED FOREVER BLOCK */
+let currentAssemblyStep = 1;
+
+function addCodeStep(step) {
+  if (step !== currentAssemblyStep) return;
+  playSound('correct');
+
+  const btn = document.getElementById(`cpuz-${step}`);
+  if (btn) btn.classList.add('opacity-40', 'pointer-events-none');
+
+  if (step === 1) {
+    document.getElementById('ws-ph-1').classList.add('hidden');
+    document.getElementById('ws-step-1').classList.remove('hidden');
+    currentAssemblyStep = 2;
+    enablePaletteBtn(2);
+  } else if (step === 2) {
+    // Shows the Forever wrapper with C-mouth!
+    document.getElementById('ws-step-2').classList.remove('hidden');
+    currentAssemblyStep = 3;
+    enablePaletteBtn(3);
+  } else if (step === 3) {
+    // Nest step 3 inside Forever
+    document.getElementById('ws-step-3').classList.remove('hidden');
+    currentAssemblyStep = 4;
+    enablePaletteBtn(4);
+  } else if (step === 4) {
+    // Nest step 4 (If block) inside Forever
+    document.getElementById('ws-ph-4').classList.add('hidden');
+    document.getElementById('ws-step-4').classList.remove('hidden');
+    currentAssemblyStep = 5;
+    enablePaletteBtn(5);
+  } else if (step === 5) {
+    // Nest step 5 (Go to X & Y) inside If block
+    document.getElementById('ws-ph-5').classList.add('hidden');
+    document.getElementById('ws-step-5').classList.remove('hidden');
+    document.getElementById('code-success-msg').classList.remove('hidden');
+    document.getElementById('script-progress-tag').innerText = 'All 5 Steps Assembled!';
+    triggerSuccessConfetti();
+  }
+
+  if (currentAssemblyStep <= 5) {
+    document.getElementById('script-progress-tag').innerText = `Step ${currentAssemblyStep} of 5`;
+  }
+}
+
+function enablePaletteBtn(n) {
+  const b = document.getElementById(`cpuz-${n}`);
+  if (b) b.classList.remove('opacity-40', 'pointer-events-none');
+}
+
+function resetCodeBuilder() {
+  playSound('pop');
+  currentAssemblyStep = 1;
+  document.getElementById('ws-ph-1').classList.remove('hidden');
+  document.getElementById('ws-step-1').classList.add('hidden');
+  document.getElementById('ws-step-2').classList.add('hidden');
+  document.getElementById('ws-step-3').classList.add('hidden');
+  document.getElementById('ws-step-4').classList.add('hidden');
+  document.getElementById('ws-step-5').classList.add('hidden');
+  document.getElementById('ws-ph-4').classList.remove('hidden');
+  document.getElementById('ws-ph-5').classList.remove('hidden');
+  document.getElementById('code-success-msg').classList.add('hidden');
+  document.getElementById('script-progress-tag').innerText = 'Step 1 of 5';
+
+  for (let i = 1; i <= 5; i++) {
+    const btn = document.getElementById(`cpuz-${i}`);
+    if (btn) {
+      if (i === 1) {
+        btn.classList.remove('opacity-40', 'pointer-events-none');
+      } else {
+        btn.classList.add('opacity-40', 'pointer-events-none');
+      }
+    }
+  }
+}
+
+/* SLIDE 10: PEN TOOL CHECK */
+function selectPenTool(btn, type) {
+  playSound('correct');
+  btn.parentElement.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('selected-correct'));
+  btn.classList.add('selected-correct');
+
+  if (type === 'pencil') {
+    document.getElementById('pen-feedback').innerText = '✨ Exactly! A Pencil sprite acts as the drawing tip that tracks your finger coordinates!';
+  } else {
+    document.getElementById('pen-feedback').innerText = '🎉 Spot on! The Pen Extension gives us blocks like "pen down" to draw lines!';
+  }
+}
+
+/* SLIDE 11: FINAL QUIZ */
+function checkFinalQuiz(btn, isCorrect) {
+  const fb = document.getElementById('final-feedback');
+  btn.parentElement.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('selected-correct', 'selected-wrong'));
+
+  if (isCorrect) {
+    btn.classList.add('selected-correct');
+    fb.innerText = '🎉 Correct! The Forever loop keeps checking and moving the sprite continuously!';
+    fb.className = 'p-3.5 rounded-2xl text-sm font-bold text-center block bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+    triggerSuccessConfetti();
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.innerText = '❌ Repeating 10 times would stop after only 10 frames! Use Forever to draw continuously!';
+    fb.className = 'p-3.5 rounded-2xl text-sm font-bold text-center block bg-rose-100 text-rose-800 border-2 border-rose-300';
+    playSound('wrong');
+  }
+}
+
+/* Global Listeners */
+document.addEventListener('keydown', e => {
+  if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+  if (e.key === 'ArrowRight' || e.key === ' ') handleNextOrFinish();
+  if (e.key === 'ArrowLeft') prevSlide();
+});
+
+window.addEventListener('resize', fitStageToScreen);
+
+window.addEventListener('DOMContentLoaded', () => {
+  currentSlide = 1;
+  initHeaderDots();
+  updateSlideDisplay();
+  fitStageToScreen();
+  selectDetectionMode('hand');
+});
+</script>
+</body>
+</html>
