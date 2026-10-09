@@ -488,7 +488,7 @@
       </div>
     </div>
 
-    <!-- ==================== SLIDE 3: AIR DRAWING ANIMATION LAB (NO "HOW DOES IT WORK") ==================== -->
+    <!-- ==================== SLIDE 3: AIR DRAWING ANIMATION LAB ==================== -->
     <div id="slide-3" class="slide-panel bg-white justify-between">
       <div>
         <span class="text-xs uppercase font-extrabold tracking-wider text-alphagen-purple bg-alphagen-purpleGhost px-4 py-1.5 rounded-md border border-alphagen-purplePale">Interactive Demo</span>
@@ -499,25 +499,30 @@
       <div class="w-full bg-slate-900 border-2 border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col justify-between my-auto relative overflow-hidden">
         <div class="flex justify-between items-center text-xs font-mono text-slate-300 border-b border-slate-800 pb-2 mb-3">
           <span class="text-alphagen-yellow font-bold uppercase"><i class="fa-solid fa-video mr-1"></i> AIR CANVAS SIMULATOR</span>
-         
+          <span id="canvas-status" class="text-emerald-400 font-semibold">👉 Click or drag anywhere below — watch the finger move and paint glowing ink as it travels!</span>
           <button onclick="clearAirCanvas()" class="bg-rose-500/20 text-rose-300 border border-rose-500/40 px-3 py-1 rounded-xl text-xs font-bold hover:bg-rose-500 hover:text-white transition">
             <i class="fa-solid fa-trash-can mr-1"></i> Clear Canvas
           </button>
         </div>
 
-        <div id="air-canvas-container" onclick="handleAirCanvasClick(event)" class="w-full h-[370px] bg-[#0c142b] rounded-2xl border-2 border-slate-700 relative overflow-hidden cursor-crosshair">
+        <div id="air-canvas-container" 
+             onmousedown="handleCanvasMouseDown(event)" 
+             onmousemove="handleCanvasMouseMove(event)" 
+             onmouseup="handleCanvasMouseUp()" 
+             onmouseleave="handleCanvasMouseUp()" 
+             class="w-full h-[370px] bg-[#0c142b] rounded-2xl border-2 border-slate-700 relative overflow-hidden cursor-crosshair">
           <!-- Canvas for drawing lines -->
-          <canvas id="airDrawCanvas" width="1180" height="370" class="absolute inset-0 pointer-events-none"></canvas>
+          <canvas id="airDrawCanvas" class="absolute inset-0 pointer-events-none"></canvas>
           
-          <!-- Animated Hand Cursor Element -->
-          <div id="animated-hand-cursor" class="absolute top-1/2 left-1/2 -translate-x-4 -translate-y-4 pointer-events-none transition-all duration-700 ease-out flex items-center justify-center">
-            <span class="text-6xl filter drop-shadow">👆</span>
-            <span class="w-4 h-4 rounded-full bg-emerald-400 absolute top-1 left-2 animate-ping"></span>
+          <!-- Animated Hand Cursor Element (driven synchronously frame-by-frame) -->
+          <div id="animated-hand-cursor" class="absolute pointer-events-none flex items-center justify-center -translate-x-3 -translate-y-2 z-10">
+            <span class="text-5xl filter drop-shadow">👆</span>
+            <span class="w-3.5 h-3.5 rounded-full bg-emerald-400 absolute -top-1 left-2 animate-ping"></span>
           </div>
         </div>
 
         <div class="flex justify-between items-center mt-3 text-xs font-mono text-slate-400">
-          <span id="coord-readout">Target Position: [x: 590, y: 185]</span>
+          <span id="coord-readout">Fingertip Position: [x: 590, y: 185]</span>
           <span class="text-slate-400">Today we will be learning how to use hand detection to create air drawing!</span>
         </div>
       </div>
@@ -556,7 +561,9 @@
             </p>
           </div>
 
-          
+          <div class="p-3.5 bg-slate-950 rounded-xl border border-slate-800 text-xs font-mono text-center text-alphagen-yellow font-bold">
+            Pre-Trained AI Detection Model
+          </div>
         </div>
 
         <!-- 2 Main Modes: Pose Detection & Hand Detection -->
@@ -634,7 +641,7 @@
            
           </div>
           <div class="mt-4 p-2 bg-white rounded-xl border border-alphagen-purplePale text-xs font-bold text-amber-700">
-            Pinpoint X &amp; Y co-ordinate
+            Pinpoint X &amp; Y coordinates!
           </div>
         </div>
 
@@ -686,7 +693,7 @@
             </div>
             <span class="bg-alphagen-yellowDark text-alphagen-nearBlack font-extrabold text-xs px-3 py-1 rounded-full uppercase">Step 2</span>
             <h3 class="font-extrabold text-base text-alphagen-nearBlack mt-3 mb-2">Analyse Hand</h3>
-           
+            
           </div>
         </div>
 
@@ -698,7 +705,7 @@
             </div>
             <span class="bg-emerald-600 text-white font-extrabold text-xs px-3 py-1 rounded-full uppercase">Step 3</span>
             <h3 class="font-extrabold text-base text-alphagen-nearBlack mt-3 mb-2">Check If Detected</h3>
-           
+            
           </div>
         </div>
 
@@ -715,9 +722,7 @@
         </div>
       </div>
 
-      <div class="bg-alphagen-purplePale border border-alphagen-purpleMid p-3 rounded-2xl text-xs font-bold text-alphagen-purple text-center">
-        📹 Turn on camera ➔ 🧠 Analyse image ➔ ✅ Is hand detected? ➔ 📍 Move sprite to finger position!
-      </div>
+     
     </div>
 
     <!-- ==================== SLIDE 7: LEARN KEY AI BLOCKS (2x2 GRID WITH DIRECT DROPDOWNS) ==================== -->
@@ -1083,15 +1088,11 @@
             </div>
           </div>
 
-          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs font-mono text-emerald-400 text-center">
-            Combine Pen Down + Index Finger Position = Air Drawing!
-          </div>
+         
         </div>
       </div>
 
-      <div class="bg-alphagen-yellowPale border border-yellow-300 p-3 rounded-xl text-xs font-bold text-alphagen-nearBlack text-center">
-        💡 When the sprite glides to your fingertip with <strong>pen down</strong>, it paints wherever your hand moves!
-      </div>
+     
     </div>
 
     <!-- ==================== SLIDE 11: FINAL KNOWLEDGE CHECK & CELEBRATION (NO CHECKLIST) ==================== -->
@@ -1338,18 +1339,76 @@ function pickDrawTool(btn, text) {
   document.getElementById('draw-tool-feedback').innerText = `Great choice! Using ${text} creates vivid artwork!`;
 }
 
-/* SLIDE 3: AIR CANVAS CLICK & DRAWING ANIMATION */
-let lastDrawX = null;
-let lastDrawY = null;
+/* SLIDE 3: AIR CANVAS REAL-TIME DRAW-WHILE-MOVING ANIMATION */
+let currentHandX = null;
+let currentHandY = null;
+let glideAnimationId = null;
+let isMouseDownOnCanvas = false;
 
 function initAirCanvas() {
+  const container = document.getElementById('air-canvas-container');
+  const canvas = document.getElementById('airDrawCanvas');
+  const hand = document.getElementById('animated-hand-cursor');
+  if (!container || !canvas || !hand) return;
+
+  // Set internal canvas resolution to match exact container dimensions
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
+
+  if (currentHandX === null || currentHandY === null) {
+    currentHandX = Math.round(canvas.width / 2);
+    currentHandY = Math.round(canvas.height / 2);
+  }
+
+  hand.style.left = `${currentHandX}px`;
+  hand.style.top = `${currentHandY}px`;
+}
+
+function handleCanvasMouseDown(e) {
+  isMouseDownOnCanvas = true;
+  handleAirCanvasClick(e);
+}
+
+function handleCanvasMouseMove(e) {
+  if (!isMouseDownOnCanvas) return;
+  const container = document.getElementById('air-canvas-container');
+  const canvas = document.getElementById('airDrawCanvas');
+  const hand = document.getElementById('animated-hand-cursor');
+  if (!container || !canvas || !hand) return;
+
+  const rect = container.getBoundingClientRect();
+  const targetX = Math.round(e.clientX - rect.left);
+  const targetY = Math.round(e.clientY - rect.top);
+
+  // Directly draw ink segment to cursor position during drag
+  drawInkSegment(currentHandX, currentHandY, targetX, targetY);
+  currentHandX = targetX;
+  currentHandY = targetY;
+  hand.style.left = `${targetX}px`;
+  hand.style.top = `${targetY}px`;
+
+  document.getElementById('coord-readout').innerText = `Fingertip Position: [x: ${targetX}, y: ${targetY}] (Drawing live!)`;
+}
+
+function handleCanvasMouseUp() {
+  isMouseDownOnCanvas = false;
+}
+
+function drawInkSegment(fromX, fromY, toX, toY) {
   const canvas = document.getElementById('airDrawCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   ctx.strokeStyle = '#59E4FB';
-  ctx.lineWidth = 5;
+  ctx.shadowColor = '#FFD071';
+  ctx.shadowBlur = 10;
+  ctx.lineWidth = 6;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(fromX, fromY);
+  ctx.lineTo(toX, toY);
+  ctx.stroke();
 }
 
 function handleAirCanvasClick(e) {
@@ -1359,56 +1418,90 @@ function handleAirCanvasClick(e) {
   const canvas = document.getElementById('airDrawCanvas');
   if (!container || !hand || !canvas) return;
 
+  if (glideAnimationId) {
+    cancelAnimationFrame(glideAnimationId);
+    glideAnimationId = null;
+  }
+
   const rect = container.getBoundingClientRect();
   const targetX = Math.round(e.clientX - rect.left);
   const targetY = Math.round(e.clientY - rect.top);
 
-  hand.style.left = `${targetX}px`;
-  hand.style.top = `${targetY}px`;
+  const startX = (currentHandX !== null) ? currentHandX : Math.round(canvas.width / 2);
+  const startY = (currentHandY !== null) ? currentHandY : Math.round(canvas.height / 2);
 
-  document.getElementById('coord-readout').innerText = `Target Position: [x: ${targetX}, y: ${targetY}] (Finger Gliding!)`;
-  document.getElementById('canvas-status').innerText = `✨ Hand moved to [${targetX}, ${targetY}]! Line drawn!`;
+  const distance = Math.hypot(targetX - startX, targetY - startY);
+  if (distance < 2) return;
 
-  const ctx = canvas.getContext('2d');
-  ctx.strokeStyle = '#59E4FB';
-  ctx.shadowColor = '#FFD071';
-  ctx.shadowBlur = 8;
-  ctx.lineWidth = 5;
+  // Duration scales dynamically with distance (350ms to 750ms)
+  const duration = Math.min(750, Math.max(350, distance * 1.8));
+  const startTime = performance.now();
+  let prevStepX = startX;
+  let prevStepY = startY;
 
-  if (lastDrawX === null || lastDrawY === null) {
-    lastDrawX = canvas.width / 2;
-    lastDrawY = canvas.height / 2;
+  document.getElementById('canvas-status').innerText = `✨ Finger is moving and painting the trail to [${targetX}, ${targetY}]...`;
+
+  function animateGlide(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(1, elapsed / duration);
+    // Smooth cubic ease-out curve
+    const easeProgress = 1 - Math.pow(1 - progress, 3);
+
+    const stepX = Math.round(startX + (targetX - startX) * easeProgress);
+    const stepY = Math.round(startY + (targetY - startY) * easeProgress);
+
+    // Draw ink progressively between every frame's position as the finger glides
+    drawInkSegment(prevStepX, prevStepY, stepX, stepY);
+
+    // Update hand position synchronously with the drawn line tip
+    hand.style.left = `${stepX}px`;
+    hand.style.top = `${stepY}px`;
+    currentHandX = stepX;
+    currentHandY = stepY;
+    prevStepX = stepX;
+    prevStepY = stepY;
+
+    document.getElementById('coord-readout').innerText = `Fingertip Position: [x: ${stepX}, y: ${stepY}] (Drawing live!)`;
+
+    if (progress < 1) {
+      glideAnimationId = requestAnimationFrame(animateGlide);
+    } else {
+      glideAnimationId = null;
+      // Mark destination point with glowing dot
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#FFD071';
+      ctx.beginPath();
+      ctx.arc(targetX, targetY, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      document.getElementById('canvas-status').innerText = `🎉 Reached [${targetX}, ${targetY}]! Air line drawn!`;
+      playSound('correct');
+    }
   }
 
-  ctx.beginPath();
-  ctx.moveTo(lastDrawX, lastDrawY);
-  ctx.lineTo(targetX, targetY);
-  ctx.stroke();
-
-  ctx.fillStyle = '#FFD071';
-  ctx.beginPath();
-  ctx.arc(targetX, targetY, 4, 0, Math.PI * 2);
-  ctx.fill();
-
-  lastDrawX = targetX;
-  lastDrawY = targetY;
-  playSound('correct');
+  glideAnimationId = requestAnimationFrame(animateGlide);
 }
 
 function clearAirCanvas() {
   playSound('pop');
+  if (glideAnimationId) {
+    cancelAnimationFrame(glideAnimationId);
+    glideAnimationId = null;
+  }
   const canvas = document.getElementById('airDrawCanvas');
-  if (!canvas) return;
+  const hand = document.getElementById('animated-hand-cursor');
+  if (!canvas || !hand) return;
+
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  lastDrawX = canvas.width / 2;
-  lastDrawY = canvas.height / 2;
-  const hand = document.getElementById('animated-hand-cursor');
-  if (hand) {
-    hand.style.left = '50%';
-    hand.style.top = '50%';
-  }
+
+  currentHandX = Math.round(canvas.width / 2);
+  currentHandY = Math.round(canvas.height / 2);
+  hand.style.left = `${currentHandX}px`;
+  hand.style.top = `${currentHandY}px`;
+
   document.getElementById('canvas-status').innerText = 'Canvas cleared! Click anywhere to begin drawing again.';
+  document.getElementById('coord-readout').innerText = `Fingertip Position: [x: ${currentHandX}, y: ${currentHandY}]`;
 }
 
 /* SLIDE 4: DETECTION MODE TOGGLE */
